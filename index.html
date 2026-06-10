@@ -1007,10 +1007,13 @@ function renderPaceCard() {
   const daysElapsed = Math.min(Math.round((today - cycleStart) / 86400000) + 1, totalDays);
   const loggedDays = new Set(cycleEntries.map(e => e.date)).size;
 
-  // Count remaining weekdays from tomorrow through cycle end (all normalized to noon)
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  // If no hours logged today, count today as a remaining workday
+  const todayStr = dateStr(today);
+  const loggedToday = cycleEntries.some(e => e.date === todayStr);
+  const countFrom = loggedToday ? new Date(today) : new Date(today);
+  if (loggedToday) countFrom.setDate(countFrom.getDate() + 1);
   let remainingWeekdays = 0;
-  const cursor = new Date(tomorrow);
+  const cursor = new Date(countFrom);
   while (cursor <= cycleEnd) {
     const dow = cursor.getDay();
     if (dow !== 0 && dow !== 6) remainingWeekdays++;

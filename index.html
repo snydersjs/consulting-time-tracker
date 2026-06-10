@@ -795,7 +795,6 @@ function submitEntry() {
   } else {
     const entry = { id: Date.now().toString(), date, hours, project, description: desc };
     entries.push(entry);
-    selectedMonth = getMonthKey(date);
     showToast("Entry saved");
   }
 

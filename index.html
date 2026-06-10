@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Consulting Time Tracker</title>
+<link rel="apple-touch-icon" href="icon-time-tracker.png">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #161616;
+    --border: #262626;
+    --border-dim: #1e1e1e;
+    --text: #e8e4dc;
+    --text-dim: #7a7a7a;
+    --text-mid: #9a9690;
+    --accent: #7dba9c;
+    --accent-bg: #1a3a2a;
+    --accent-border: #2d6b45;
+    --accent-dim: #3d6b50;
+    --danger: #8a4a4a;
+    --danger-bg: #2a1a1a;
+    --hours-color: #7dba9c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 16px;
+    min-height: 100vh;
+  }
+
+  /* Setup Banner */
+  #setup-banner {
+    background: #1a1a0a;
+    border-bottom: 1px solid #3a3a1a;
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #a09050;
+  }
+  #setup-banner a { color: #d4b060; }
+  #setup-banner input {
+    background: #0f0f0a;
+    border: 1px solid #3a3a1a;
+    color: #e8e0c0;
+    padding: 6px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 320px;
+    outline: none;
+  }
+  #setup-banner button {
+    background: #2a2a0a;
+    border: 1px solid #3a3a1a;
+    color: #d4b060;
+    padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  #setup-banner button:hover { background: #3a3a1a; }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 32px 40px 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  .header-title-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .header-title {
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .header-total { text-align: right; font-size: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .header-total span { color: var(--text); font-size: 22px; font-family: 'EB Garamond', serif; }
+
+  /* Sync status */
+  #sync-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  #sync-status.syncing { border-color: #3a3a1a; color: #a09050; }
+  #sync-status.synced { border-color: var(--accent-border); color: var(--accent); }
+  #sync-status.error { border-color: #6a3a3a; color: #c07070; }
+
+  /* Main */
+  main { padding: 0 40px 60px; max-width: 900px; }
+
+  /* Form */
+  .form-card {
+    margin-top: 32px;
+    margin-bottom: 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+  }
+  .form-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 150px 110px 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .form-card input[type="date"],
+  .form-card input[type="number"],
+  .form-card select,
+  .form-card textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: 'EB Garamond', Georgia, serif;
+    outline: none;
+    color-scheme: dark;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .form-card select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a5a5a'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .form-card textarea { resize: vertical; line-height: 1.5; }
+  .form-card input:focus,
+  .form-card select:focus,
+  .form-card textarea:focus { border-color: var(--accent-dim); }
+  .form-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .btn-primary {
+    background: var(--accent-bg);
+    color: var(--accent);
+    border: none;
+    padding: 10px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-primary:hover { background: #223a2a; }
+  .btn-primary:disabled { background: #1a2a20; color: #3a5a44; cursor: default; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { border-color: #3a3a3a; color: var(--text-mid); }
+  .btn-row { display: flex; gap: 12px; margin-top: 4px; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    padding: 8px 20px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-bottom: -1px;
+  }
+  .tab.active { border-bottom-color: var(--accent); color: var(--text); }
+
+  /* Month pills */
+  .month-pills { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .month-pill {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .month-pill.active { background: var(--accent-bg); border-color: var(--accent-border); color: var(--accent); }
+  .month-pill:hover:not(.active) { border-color: #3a3a3a; }
+
+  /* Log entries */
+  .log-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .log-header .accent { color: var(--accent); margin-left: 16px; }
+  .entry {
+    border-top: 1px solid var(--border-dim);
+    padding: 16px 0;
+    display: grid;
+    grid-template-columns: 120px 56px 1fr auto;
+    gap: 16px;
+    align-items: start;
+  }
+  .entry-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); padding-top: 2px; }
+  .entry-hours { font-size: 18px; color: var(--hours-color); text-align: right; font-variant-numeric: tabular-nums; }
+  .entry-project {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .entry-desc { font-size: 14px; color: #c8c4bc; line-height: 1.6; }
+  .entry-actions { display: flex; gap: 6px; }
+  .btn-tiny {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 3px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-tiny:hover { border-color: #3a3a3a; color: var(--text-mid); }
+  .btn-tiny.danger:hover { border-color: #6a3a3a; color: #c07070; }
+
+  /* Invoice */
+  .invoice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .invoice-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+  .btn-copy {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 8px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-copy:hover { border-color: var(--accent-border); color: var(--accent); }
+  .btn-copy.copied { background: var(--accent-bg); border-color: var(--accent-border); color: var(--accent); }
+  pre#invoice-text {
+    background: #0a0a0a;
+    border: 1px solid var(--border-dim);
+    padding: 24px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.9;
+    color: #b8b4ac;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+
+  /* Settings */
+  .gear-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 4px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .gear-btn:hover { border-color: #3a3a3a; color: var(--text-mid); }
+  .gear-btn.active { border-color: var(--accent-border); color: var(--accent); }
+  #settings-panel {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    display: none;
+  }
+  #settings-panel.open { display: block; }
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    max-width: 600px;
+  }
+  .settings-grid input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    outline: none;
+  }
+  .settings-grid input[type="number"]:focus { border-color: var(--accent-dim); }
+
+  /* Pace card */
+  #pace-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 20px;
+    margin-top: 24px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .pace-cycle { color: var(--text-dim); letter-spacing: 0.08em; }
+  .pace-hours { font-size: 22px; font-family: 'EB Garamond', serif; color: var(--text); }
+  .pace-hours span { font-size: 13px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .pace-indicator { letter-spacing: 0.06em; }
+  .pace-green { color: var(--accent); }
+  .pace-yellow { color: #c8a040; }
+  .pace-red { color: #c07070; }
+
+  /* Period dropdown */
+  .period-select-wrap { margin-bottom: 24px; display: flex; align-items: center; gap: 12px; }
+  .period-select-wrap select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 6px 28px 6px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a5a5a'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .period-select-wrap select:focus { border-color: var(--accent-dim); }
+  .period-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* Hours scroll picker */
+  .hours-picker-wrap {
+    position: relative;
+    width: 100%;
+  }
+  .hours-display {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: 'EB Garamond', Georgia, serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+    min-height: 43px;
+  }
+  .hours-display:focus { outline: none; border-color: var(--accent-dim); }
+  .hours-display .hours-val { flex: 1; }
+  .hours-display .hours-caret { color: var(--text-dim); font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+  .hours-drum-overlay {
+    display: none;
+    position: fixed;
+    width: 320px;
+    background: #1a1a1a;
+    border: 1px solid var(--accent-dim);
+    z-index: 200;
+    touch-action: none;
+  }
+  .hours-drum-overlay.open { display: block; }
+  @media (max-width: 640px) {
+    .hours-drum-overlay {
+      left: 16px !important;
+      right: 16px !important;
+      width: auto !important;
+    }
+  }
+  .hours-drum-viewport {
+    height: 165px;
+    overflow: hidden;
+    position: relative;
+  }
+  .hours-drum-viewport::before,
+  .hours-drum-viewport::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 55px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .hours-drum-viewport::before { top: 0; background: linear-gradient(to bottom, #1a1a1a, transparent); }
+  .hours-drum-viewport::after { bottom: 0; background: linear-gradient(to top, #1a1a1a, transparent); }
+  .hours-drum-track {
+    position: absolute;
+    left: 0; right: 0;
+    top: 0;
+  }
+  .hours-drum-item {
+    height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 22px;
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+  .hours-drum-item.selected { color: var(--text); font-size: 26px; }
+  .hours-drum-selector {
+    position: absolute;
+    top: 55px;
+    left: 12px; right: 12px;
+    height: 55px;
+    border-top: 1px solid var(--accent-dim);
+    border-bottom: 1px solid var(--accent-dim);
+    pointer-events: none;
+    z-index: 3;
+  }
+  .hours-type-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border-dim);
+  }
+  .hours-type-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    min-width: 0;
+  }
+  .hours-type-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1e1e1e;
+    border: 1px solid var(--accent-dim);
+    border-top: none;
+    z-index: 100;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .autocomplete-item {
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--text-mid);
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-dim);
+    line-height: 1.4;
+  }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover, .autocomplete-item.active { background: var(--accent-bg); color: var(--text); }
+
+  /* Cycle total in form */
+  .form-cycle-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-align: right;
+  }
+  .form-cycle-total span { color: var(--accent); }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    color: var(--accent);
+    padding: 10px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  #toast.show { opacity: 1; }
+
+  @media (max-width: 640px) {
+    header, main { padding-left: 16px; padding-right: 16px; }
+    header { padding: 16px; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .header-title { font-size: 20px; }
+    header > div:first-child { padding-left: 0; }
+    header > div:last-child { gap: 8px; }
+    header > div:last-child button { padding: 4px 10px; font-size: 9px; }
+    #setup-banner { padding: 12px 16px; flex-direction: column; align-items: flex-start; gap: 10px; }
+    #setup-banner input { width: 100%; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid > div:last-child { grid-column: 1 / -1; }
+    .entry { grid-template-columns: 1fr auto; grid-template-rows: auto auto auto; }
+    .entry-date { grid-column: 1; }
+    .entry-hours { grid-column: 2; grid-row: 1; }
+    .entry-content { grid-column: 1 / -1; }
+    .entry-actions { grid-column: 1 / -1; }
+    .settings-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAeGdpHwhJs_0qkqtLMf4Z1LCSEodlcKok",
+    authDomain: "ztevez-apps.firebaseapp.com",
+    projectId: "ztevez-apps",
+    storageBucket: "ztevez-apps.firebasestorage.app",
+    messagingSenderId: "609437870016",
+    appId: "1:609437870016:web:29aed98b4b1d5e7bab0a25"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window._ttDoc = doc(db, "timetracker", "data");
+  window._fsGetDoc = getDoc;
+  window._fsSetDoc = setDoc;
+</script>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div>
+    <div class="header-title">Consulting Time Tracker</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div id="sync-status">NO KEY</div>
+    <div class="header-total" id="header-total" style="display:none"><span id="total-hours">0</span>h total</div>
+    <button onclick="downloadBackup()" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">Backup</button>
+    <button onclick="downloadCSV()" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">CSV</button>
+    <button class="gear-btn" id="gear-btn" onclick="toggleSettings()" title="Settings">⚙</button>
+  </div>
+</header>
+
+<!-- Settings Panel -->
+<div id="settings-panel">
+  <div class="form-section-label" style="margin-bottom:14px;">Settings</div>
+  <div class="settings-grid">
+    <div>
+      <div class="form-label" style="margin-bottom:6px;">Cycle Anchor Day</div>
+      <input type="number" id="s-anchor" min="1" max="28" placeholder="20" onchange="saveSettings()">
+    </div>
+    <div>
+      <div class="form-label" style="margin-bottom:6px;">Target Hours</div>
+      <input type="number" id="s-target" min="1" max="200" placeholder="80" onchange="saveSettings()">
+    </div>
+    <div>
+      <div class="form-label" style="margin-bottom:6px;">Soft Max Hours</div>
+      <input type="number" id="s-softmax" min="1" max="200" placeholder="90" onchange="saveSettings()">
+    </div>
+    <div>
+      <div class="form-label" style="margin-bottom:6px;">Hard Max Hours</div>
+      <input type="number" id="s-hardmax" min="1" max="200" placeholder="93" onchange="saveSettings()">
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- Form -->
+  <div class="form-card">
+    <div class="form-section-label" id="form-label">Log Time</div>
+    <div class="form-grid">
+      <div>
+        <div class="form-label">Date</div>
+        <input type="date" id="f-date">
+      </div>
+      <div>
+        <div class="form-label">Hours</div>
+        <div class="hours-picker-wrap">
+          <input type="hidden" id="f-hours" value="1">
+          <div class="hours-display" id="hours-display" tabindex="0" onclick="openHoursPicker()" onkeydown="hoursDisplayKey(event)">
+            <span class="hours-val" id="hours-display-val">1h</span>
+            <span class="hours-caret">▾</span>
+          </div>
+          <div class="hours-drum-overlay" id="hours-drum-overlay">
+            <div class="hours-drum-viewport" id="hours-drum-viewport">
+              <div class="hours-drum-selector"></div>
+              <div class="hours-drum-track" id="hours-drum-track"></div>
+            </div>
+            <div class="hours-type-row">
+              <span class="hours-type-label">Or type:</span>
+              <input type="number" class="hours-type-input" id="hours-type-input" step="0.25" min="0.25" max="24" placeholder="e.g. 7.75" oninput="hoursTypeInput()">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="form-label">Project Area</div>
+        <select id="f-project">
+          <option>Positioning &amp; Messaging</option>
+          <option>Launch Planning</option>
+          <option>Competitive Intelligence</option>
+          <option>Sales Enablement</option>
+          <option>Stakeholder Alignment</option>
+          <option>Content Strategy</option>
+          <option>Analyst Relations</option>
+          <option>General / Admin</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div class="form-label">Description</div>
+      <div class="autocomplete-wrap">
+        <textarea id="f-desc" rows="2" placeholder="What did you work on today?" oninput="descInput()" onkeydown="descKeydown(event)" autocomplete="off"></textarea>
+        <div class="autocomplete-list" id="autocomplete-list" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="btn-row" style="justify-content:space-between;align-items:center;">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button class="btn-primary" id="submit-btn" onclick="submitEntry()">Save Entry</button>
+        <button class="btn-secondary" id="cancel-btn" style="display:none" onclick="cancelEdit()">Cancel</button>
+      </div>
+      <div class="form-cycle-total" id="form-cycle-total"></div>
+    </div>
+  </div>
+
+  <!-- Content area -->
+  <div id="content-area"></div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ─── Constants ───────────────────────────────────────────────────────────────
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const PROJECTS = ["Positioning & Messaging","Launch Planning","Competitive Intelligence","Sales Enablement","Stakeholder Alignment","Content Strategy","Analyst Relations","General / Admin"];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let entries = [];
+let editingId = null;
+let activeTab = "log";
+let selectedMonth = null;
+let invoiceFrom = null;
+let invoiceTo = null;
+let isSyncing = false;
+let settingsOpen = false;
+
+// Settings (with defaults)
+let cycleAnchorDay = 20;
+let targetHours = 80;
+let softMaxHours = 90;
+let hardMaxHours = 93;
+let customHardMax = null; // session-only override for the target line
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  setTodayDate();
+  setHoursPicker(1);
+  loadFromCloud();
+});
+
+function setTodayDate() {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+  document.getElementById("f-date").value = `${y}-${m}-${d}`;
+}
+
+// ─── Sync Status ──────────────────────────────────────────────────────────────
+function setSyncStatus(text, state) {
+  const el = document.getElementById("sync-status");
+  el.textContent = text;
+  el.className = state;
+}
+
+// ─── Cloud Sync (Firebase Firestore) ─────────────────────────────────────────
+async function loadFromCloud() {
+  setSyncStatus("LOADING...", "syncing");
+  try {
+    const snap = await window._fsGetDoc(window._ttDoc);
+    if (snap.exists()) {
+      const data = snap.data();
+      entries = data.entries || [];
+      const s = data.settings || {};
+      cycleAnchorDay = s.cycleAnchorDay ?? 20;
+      targetHours = s.targetHours ?? 80;
+      softMaxHours = s.softMaxHours ?? 90;
+      hardMaxHours = s.hardMaxHours ?? 93;
+      applySettingsToUI();
+    }
+    setSyncStatus("SYNCED", "synced");
+  } catch(e) {
+    setSyncStatus("SYNC ERROR", "error");
+    showToast("Sync error — check connection");
+  }
+  updateHeaderTotal();
+  setDefaultMonth();
+  renderContent();
+}
+
+let saveQueued = false;
+
+async function saveToCloud() {
+  if (isSyncing) { saveQueued = true; return; }
+  isSyncing = true;
+  setSyncStatus("SAVING...", "syncing");
+  try {
+    await window._fsSetDoc(window._ttDoc, {
+      entries,
+      settings: { cycleAnchorDay, targetHours, softMaxHours, hardMaxHours }
+    });
+    setSyncStatus("SYNCED", "synced");
+    renderContent();
+  } catch(e) {
+    setSyncStatus("SYNC ERROR", "error");
+    showToast("Sync error — changes not saved");
+  } finally {
+    isSyncing = false;
+    if (saveQueued) {
+      saveQueued = false;
+      saveToCloud();
+    }
+  }
+}
+
+// ─── Entry CRUD ───────────────────────────────────────────────────────────────
+function submitEntry() {
+  const date = document.getElementById("f-date").value;
+  const hours = parseFloat(document.getElementById("f-hours").value);
+  const project = document.getElementById("f-project").value;
+  const desc = document.getElementById("f-desc").value.trim();
+  if (!date || !hours || !desc) { showToast("Please fill in all fields"); return; }
+
+  if (editingId) {
+    entries = entries.map(e => e.id === editingId ? { id: editingId, date, hours, project, description: desc } : e);
+    editingId = null;
+    document.getElementById("form-label").textContent = "Log Time";
+    document.getElementById("submit-btn").textContent = "Save Entry";
+    document.getElementById("cancel-btn").style.display = "none";
+    showToast("Entry updated");
+  } else {
+    const entry = { id: Date.now().toString(), date, hours, project, description: desc };
+    entries.push(entry);
+    selectedMonth = getMonthKey(date);
+    showToast("Entry saved");
+  }
+
+  setTodayDate();
+  setHoursPicker(1);
+  document.getElementById("f-desc").value = "";
+  updateHeaderTotal();
+  saveToCloud();
+  renderContent();
+}
+
+function editEntry(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  editingId = id;
+  document.getElementById("f-date").value = e.date;
+  setHoursPicker(e.hours);
+  document.getElementById("f-project").value = e.project;
+  document.getElementById("f-desc").value = e.description;
+  document.getElementById("form-label").textContent = "Edit Entry";
+  document.getElementById("submit-btn").textContent = "Update Entry";
+  document.getElementById("cancel-btn").style.display = "inline-block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function cancelEdit() {
+  editingId = null;
+  document.getElementById("form-label").textContent = "Log Time";
+  document.getElementById("submit-btn").textContent = "Save Entry";
+  document.getElementById("cancel-btn").style.display = "none";
+  setTodayDate();
+  setHoursPicker(1);
+  document.getElementById("f-desc").value = "";
+}
+
+function deleteEntry(id) {
+  if (!confirm("Delete this entry? This cannot be undone.")) return;
+  entries = entries.filter(e => e.id !== id);
+  updateHeaderTotal();
+  saveToCloud();
+  renderContent();
+  showToast("Entry deleted");
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getMonthKey(d) { return d.slice(0, 7); }
+
+function formatDate(d) {
+  const [y, m, day] = d.split("-");
+  return `${MONTHS[parseInt(m) - 1]} ${parseInt(day)}, ${y}`;
+}
+
+function groupByMonth() {
+  const g = {};
+  entries.forEach(e => {
+    const k = getMonthKey(e.date);
+    if (!g[k]) g[k] = [];
+    g[k].push(e);
+  });
+  return g;
+}
+
+function setDefaultMonth() {
+  selectedMonth = null; // null = current cycle view
+}
+
+function updateHeaderTotal() {
+  const total = entries.reduce((s, e) => s + parseFloat(e.hours), 0);
+  const el = document.getElementById("header-total");
+  document.getElementById("total-hours").textContent = total;
+  el.style.display = entries.length ? "block" : "none";
+  updateFormCycleTotal();
+}
+
+function monthLabel(mk) {
+  const [y, m] = mk.split("-");
+  return `${MONTHS[parseInt(m) - 1].slice(0, 3)} ${y}`;
+}
+
+function generateInvoice(ents, label) {
+  const total = ents.reduce((s, e) => s + parseFloat(e.hours), 0);
+  const sorted = [...ents].sort((a, b) => a.date.localeCompare(b.date));
+  const projTotals = {};
+  ents.forEach(e => { projTotals[e.project] = (projTotals[e.project] || 0) + parseFloat(e.hours); });
+  const projLines = Object.entries(projTotals).sort((a, b) => b[1] - a[1]).map(([p, h]) => `  • ${p}: ${h}h`);
+  const logLines = sorted.map(e => `${formatDate(e.date)} — ${e.hours}h — [${e.project}]
+${e.description}`);
+  return [
+    `CONSULTING SUMMARY — ${label.toUpperCase()}`,
+    ``,
+    `TOTAL HOURS: ${total}`,
+    ``,
+    `HOURS BY PROJECT AREA:`,
+    ...projLines,
+    ``,
+    `DAILY LOG:`,
+    `─────────────────────────────────────`,
+    ...logLines.join("\n─────────────────────────────────────\n").split("\n"),
+  ].join("\n");
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+function toggleSettings() {
+  settingsOpen = !settingsOpen;
+  document.getElementById("settings-panel").classList.toggle("open", settingsOpen);
+  document.getElementById("gear-btn").classList.toggle("active", settingsOpen);
+}
+
+function applySettingsToUI() {
+  document.getElementById("s-anchor").value = cycleAnchorDay;
+  document.getElementById("s-target").value = targetHours;
+  document.getElementById("s-softmax").value = softMaxHours;
+  document.getElementById("s-hardmax").value = hardMaxHours;
+}
+
+function saveSettings() {
+  cycleAnchorDay = parseInt(document.getElementById("s-anchor").value) || 20;
+  targetHours = parseInt(document.getElementById("s-target").value) || 80;
+  softMaxHours = parseInt(document.getElementById("s-softmax").value) || 90;
+  hardMaxHours = parseInt(document.getElementById("s-hardmax").value) || 93;
+  saveToCloud();
+  renderContent();
+}
+
+function editCustomMax() {
+  const current = customHardMax !== null ? customHardMax : hardMaxHours;
+  const el = document.getElementById("custom-max-display");
+  if (!el) return;
+  const input = document.createElement("input");
+  input.type = "number";
+  input.value = current;
+  input.step = "0.5";
+  input.min = "1";
+  input.style.cssText = "width:44px;background:var(--bg);border:1px solid var(--accent-dim);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:1px 4px;outline:none;";
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+  const commit = () => {
+    const val = parseFloat(input.value);
+    if (val > 0) customHardMax = val;
+    renderContent();
+  };
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") { input.blur(); }
+    if (e.key === "Escape") { customHardMax = null; renderContent(); }
+  });
+}
+function getCurrentCycle() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const d = now.getDate();
+  let cycleStart, cycleEnd;
+  if (d >= cycleAnchorDay) {
+    cycleStart = new Date(y, m, cycleAnchorDay, 12, 0, 0);
+    cycleEnd = new Date(y, m + 1, cycleAnchorDay - 1, 12, 0, 0);
+  } else {
+    cycleStart = new Date(y, m - 1, cycleAnchorDay, 12, 0, 0);
+    cycleEnd = new Date(y, m, cycleAnchorDay - 1, 12, 0, 0);
+  }
+  return {
+    from: dateStr(cycleStart),
+    to: dateStr(cycleEnd),
+    start: cycleStart,
+    end: cycleEnd
+  };
+}
+
+function getPastCycles() {
+  if (!entries.length) return [];
+  const current = getCurrentCycle();
+  // Find oldest entry date to know how far back to go
+  const oldest = entries.map(e => e.date).sort()[0];
+  const cycles = [];
+  let anchorDate = new Date(current.start);
+  // Step back one cycle at a time until we're before the oldest entry
+  for (let i = 0; i < 24; i++) {
+    const end = new Date(anchorDate);
+    end.setDate(end.getDate() - 1);
+    const start = new Date(anchorDate);
+    start.setMonth(start.getMonth() - 1);
+    const fromStr = dateStr(start);
+    const toStr = dateStr(end);
+    if (toStr < oldest) break;
+    const cycleHours = entries.filter(e => e.date >= fromStr && e.date <= toStr)
+      .reduce((s, e) => s + parseFloat(e.hours), 0);
+    cycles.push({ from: fromStr, to: toStr, hours: cycleHours });
+    anchorDate = new Date(start);
+  }
+  return cycles;
+}
+
+function dateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function renderPaceCard() {
+  const cycle = getCurrentCycle();
+  const now = new Date();
+  // Normalize today to noon to avoid midnight boundary issues
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+  const cycleEntries = entries.filter(e => e.date >= cycle.from && e.date <= cycle.to);
+  const hoursLogged = cycleEntries.reduce((s, e) => s + parseFloat(e.hours), 0);
+
+  const cycleStart = new Date(cycle.start + 'T12:00:00');
+  const cycleEnd = new Date(cycle.to + 'T12:00:00');
+  const totalDays = Math.round((cycleEnd - cycleStart) / 86400000) + 1;
+  const daysElapsed = Math.min(Math.round((today - cycleStart) / 86400000) + 1, totalDays);
+  const loggedDays = new Set(cycleEntries.map(e => e.date)).size;
+
+  // Count remaining weekdays from tomorrow through cycle end (all normalized to noon)
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  let remainingWeekdays = 0;
+  const cursor = new Date(tomorrow);
+  while (cursor <= cycleEnd) {
+    const dow = cursor.getDay();
+    if (dow !== 0 && dow !== 6) remainingWeekdays++;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  const projectedHours = loggedDays > 0
+    ? Math.round((hoursLogged / loggedDays) * (loggedDays + remainingWeekdays) * 10) / 10
+    : 0;
+
+  let paceClass = "pace-green";
+  let paceNote = "on pace";
+  if (projectedHours > hardMaxHours) { paceClass = "pace-red"; paceNote = "over max"; }
+  else if (projectedHours > softMaxHours) { paceClass = "pace-yellow"; paceNote = "above soft max"; }
+  else if (projectedHours < targetHours * 0.85) { paceClass = "pace-yellow"; paceNote = "under pace"; }
+
+  const cycleLabel = `${formatDate(cycle.from)} – ${formatDate(cycle.to)}`;
+  let paceDisplay;
+  if (!loggedDays) {
+    paceDisplay = `No entries yet this cycle`;
+  } else {
+    paceDisplay = `${loggedDays} day${loggedDays !== 1 ? 's' : ''} logged · Pace: ${projectedHours}h · ${paceNote}`;
+  }
+
+  // Required hours/day for each threshold, based on remaining weekdays
+  let targetLine = '';
+  if (remainingWeekdays > 0) {
+    const hoursNeeded = (target) => {
+      const needed = Math.max(0, target - hoursLogged);
+      return Math.round((needed / remainingWeekdays) * 10) / 10;
+    };
+    const customMax = customHardMax !== null ? customHardMax : hardMaxHours;
+    targetLine = `To hit ${targetHours}h: ${hoursNeeded(targetHours)}h/day · ${softMaxHours}h: ${hoursNeeded(softMaxHours)}h/day · <span id="custom-max-display" onclick="editCustomMax()" title="Tap to edit" style="cursor:pointer;border-bottom:1px dashed var(--text-dim);">${customMax}h</span>: ${hoursNeeded(customMax)}h/day`;
+  } else if (loggedDays > 0) {
+    targetLine = `Cycle complete · ${hoursLogged}h logged`;
+  }
+
+  return `<div id="pace-card">
+    <div>
+      <div class="pace-cycle">CURRENT CYCLE</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.06em;margin-top:2px;">${cycleLabel}</div>
+    </div>
+    <div class="pace-hours">${hoursLogged}h <span>logged</span></div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div class="pace-indicator ${paceClass}">${paceDisplay}</div>
+      ${targetLine ? `<div class="pace-indicator" style="color:var(--text-dim);">${targetLine}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderContent() {
+  const area = document.getElementById("content-area");
+  const grouped = groupByMonth();
+  const monthKeys = Object.keys(grouped).sort().reverse();
+
+  if (!entries.length) {
+    area.innerHTML = `${renderPaceCard()}<div class="empty" style="margin-top:32px;">No entries yet. Log your first session above.</div>`;
+    return;
+  }
+
+  // Tabs
+  let html = renderPaceCard();
+  html += `<div class="tabs" style="margin-top:24px;">
+    <button class="tab ${activeTab === 'log' ? 'active' : ''}" onclick="switchTab('log')">Time Log</button>
+    <button class="tab ${activeTab === 'invoice' ? 'active' : ''}" onclick="switchTab('invoice')">Invoice Summary</button>
+  </div>`;
+
+  if (activeTab === "log") {
+    const cycle = getCurrentCycle();
+    const pastCycles = getPastCycles();
+    let viewEntries, viewLabel;
+
+    if (!selectedMonth) {
+      // Current cycle
+      viewEntries = entries.filter(e => e.date >= cycle.from && e.date <= cycle.to);
+      viewLabel = `Current Cycle`;
+    } else if (selectedMonth.startsWith("cycle:")) {
+      // A past billing cycle
+      const [, from, to] = selectedMonth.split(":");
+      viewEntries = entries.filter(e => e.date >= from && e.date <= to);
+      viewLabel = `${formatDate(from)} – ${formatDate(to)}`;
+    } else {
+      // A calendar month
+      viewEntries = grouped[selectedMonth] || [];
+      const [y, m] = selectedMonth.split("-");
+      viewLabel = `${MONTHS[parseInt(m)-1]} ${y}`;
+    }
+
+    const sortedView = [...viewEntries].sort((a, b) => b.date.localeCompare(a.date));
+    const viewTotal = viewEntries.reduce((s, e) => s + parseFloat(e.hours), 0);
+
+    const pastCycleOptions = pastCycles.map(c => {
+      const key = `cycle:${c.from}:${c.to}`;
+      return `<option value="${key}" ${selectedMonth === key ? 'selected' : ''}>${formatDate(c.from)} – ${formatDate(c.to)} · ${c.hours}h</option>`;
+    }).join("");
+
+    const monthOptions = monthKeys.map(mk => {
+      const [y, m] = mk.split("-");
+      const hrs = grouped[mk].reduce((s,e) => s + parseFloat(e.hours), 0);
+      return `<option value="${mk}" ${mk === selectedMonth ? 'selected' : ''}>${MONTHS[parseInt(m)-1]} ${y} · ${hrs}h</option>`;
+    }).join("");
+
+    // Period selector
+    html += `<div class="period-select-wrap">
+      <span class="period-label">Viewing:</span>
+      <select onchange="selectPeriod(this.value)">
+        <option value="" ${!selectedMonth ? 'selected' : ''}>Current Cycle (${formatDate(cycle.from)} – ${formatDate(cycle.to)})</option>
+        ${pastCycles.length ? `<optgroup label="── Past Cycles">${pastCycleOptions}</optgroup>` : ''}
+        ${monthKeys.length ? `<optgroup label="── Calendar Months">${monthOptions}</optgroup>` : ''}
+      </select>
+    </div>`;
+
+    html += `<div class="log-header">${viewLabel}<span class="accent">${viewTotal}h total</span></div>`;
+    sortedView.forEach(e => {
+      html += `<div class="entry">
+        <div class="entry-date">${formatDate(e.date)}</div>
+        <div class="entry-hours">${e.hours}h</div>
+        <div>
+          <div class="entry-project">${e.project}</div>
+          <div class="entry-desc">${escHtml(e.description)}</div>
+        </div>
+        <div class="entry-actions">
+          <button class="btn-tiny" onclick="editEntry('${e.id}')">Edit</button>
+          <button class="btn-tiny danger" onclick="deleteEntry('${e.id}')">Del</button>
+        </div>
+      </div>`;
+    });
+
+  } else {
+    // Invoice tab — default to current cycle dates
+    const cycle = getCurrentCycle();
+    if (!invoiceFrom) invoiceFrom = cycle.from;
+    if (!invoiceTo) invoiceTo = cycle.to;
+
+    const rangeEntries = entries.filter(e => e.date >= invoiceFrom && e.date <= invoiceTo);
+    const rangeLabel = `${formatDate(invoiceFrom)} – ${formatDate(invoiceTo)}`;
+    const invoiceText = generateInvoice(rangeEntries, rangeLabel);
+
+    html += `<div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+      <div>
+        <div class="form-label" style="margin-bottom:6px;">From</div>
+        <input type="date" id="inv-from" value="${invoiceFrom}" onchange="updateInvoiceRange()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;font-family:inherit;font-size:14px;outline:none;color-scheme:dark;">
+      </div>
+      <div>
+        <div class="form-label" style="margin-bottom:6px;">To</div>
+        <input type="date" id="inv-to" value="${invoiceTo}" onchange="updateInvoiceRange()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;font-family:inherit;font-size:14px;outline:none;color-scheme:dark;">
+      </div>
+      <button class="btn-secondary" onclick="resetInvoiceRange()" style="padding:8px 16px;font-size:10px;">Reset to Current Cycle</button>
+      <button class="btn-copy" id="copy-btn" onclick="copyInvoice()" style="margin-left:auto;">Copy to Clipboard</button>
+    </div>
+    <pre id="invoice-text">${escHtml(invoiceText)}</pre>`;
+  }
+
+  area.innerHTML = html;
+}
+
+function switchTab(tab) { activeTab = tab; invoiceFrom = null; invoiceTo = null; renderContent(); }
+function selectMonth(mk) { selectedMonth = mk; invoiceFrom = null; invoiceTo = null; renderContent(); }
+function selectPeriod(val) { selectedMonth = val || null; renderContent(); }
+function updateInvoiceRange() {
+  invoiceFrom = document.getElementById("inv-from").value;
+  invoiceTo = document.getElementById("inv-to").value;
+  renderContent();
+}
+function resetInvoiceRange() {
+  invoiceFrom = null;
+  invoiceTo = null;
+  renderContent();
+}
+
+function copyInvoice() {
+  const text = document.getElementById("invoice-text").textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById("copy-btn");
+    btn.textContent = "Copied ✓";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = "Copy to Clipboard"; btn.classList.remove("copied"); }, 2000);
+    showToast("Copied to clipboard");
+  });
+}
+
+// ─── Hours Picker ─────────────────────────────────────────────────────────────
+const HOUR_VALUES = [];
+for (let i = 0.25; i <= 12; i = Math.round((i + 0.25) * 100) / 100) HOUR_VALUES.push(i);
+
+let pickerValue = 1;
+let drumStartY = null;
+let drumStartOffset = 0;
+let drumOffset = 0;
+const ITEM_H = 55;
+// Viewport shows 3 items (165px). Selected item is always the middle one (index 1).
+// offset = 0 means track top is at viewport top, so item 0 is at top.
+// To center item idx: translateY = ITEM_H - idx * ITEM_H  (puts item at row 1 = middle)
+
+function buildDrum() {
+  const track = document.getElementById("hours-drum-track");
+  if (!track) return;
+  track.innerHTML = HOUR_VALUES.map((v, i) =>
+    `<div class="hours-drum-item" data-index="${i}">${v}h</div>`
+  ).join("");
+}
+
+function currentIndex() {
+  // drumOffset is the translateY of the track
+  // center row offset = ITEM_H, so index = (ITEM_H - drumOffset) / ITEM_H
+  return Math.max(0, Math.min(HOUR_VALUES.length - 1, Math.round((ITEM_H - drumOffset) / ITEM_H)));
+}
+
+function indexToOffset(idx) {
+  return ITEM_H - idx * ITEM_H;
+}
+
+function clampOffset(offset) {
+  const minOffset = ITEM_H - (HOUR_VALUES.length - 1) * ITEM_H;
+  const maxOffset = ITEM_H; // index 0 centered
+  return Math.max(minOffset, Math.min(maxOffset, offset));
+}
+
+function applyDrum(offset, animate) {
+  const track = document.getElementById("hours-drum-track");
+  if (!track) return;
+  drumOffset = clampOffset(offset);
+  track.style.transition = animate ? "transform 0.2s ease" : "none";
+  track.style.transform = `translateY(${drumOffset}px)`;
+  const idx = currentIndex();
+  track.querySelectorAll(".hours-drum-item").forEach((el, i) => {
+    el.classList.toggle("selected", i === idx);
+  });
+}
+
+function snapDrum(animate) {
+  const idx = currentIndex();
+  applyDrum(indexToOffset(idx), animate);
+}
+
+function commitPicker() {
+  const idx = currentIndex();
+  pickerValue = HOUR_VALUES[idx];
+  document.getElementById("f-hours").value = pickerValue;
+  document.getElementById("hours-display-val").textContent = pickerValue + "h";
+}
+
+function openHoursPicker() {
+  buildDrum();
+  const overlay = document.getElementById("hours-drum-overlay");
+  const display = document.getElementById("hours-display");
+  const rect = display.getBoundingClientRect();
+  overlay.style.top = rect.bottom + 4 + "px";
+  // On desktop: align left edge to display left, capped so it doesn't go off-screen
+  const isMobile = window.innerWidth <= 640;
+  if (!isMobile) {
+    const left = Math.min(rect.left, window.innerWidth - 328);
+    overlay.style.left = left + "px";
+  }
+  overlay.classList.add("open");
+  const idx = HOUR_VALUES.findIndex(v => v === pickerValue);
+  applyDrum(indexToOffset(idx >= 0 ? idx : HOUR_VALUES.indexOf(1)), false);
+  bindDrumEvents();
+}
+
+function closeHoursPicker() {
+  commitPicker();
+  document.getElementById("hours-drum-overlay").classList.remove("open");
+  document.getElementById("hours-type-input").value = "";
+}
+
+function hoursTypeInput() {
+  const val = parseFloat(document.getElementById("hours-type-input").value);
+  if (!val || val <= 0) return;
+  const closest = HOUR_VALUES.reduce((a, b) => Math.abs(b - val) < Math.abs(a - val) ? b : a);
+  const idx = HOUR_VALUES.indexOf(closest);
+  if (idx >= 0) applyDrum(indexToOffset(idx), true);
+  // Store raw val in case it's over 12
+  pickerValue = val <= 12 ? closest : val;
+  document.getElementById("f-hours").value = val;
+  document.getElementById("hours-display-val").textContent = val + "h";
+}
+
+function hoursDisplayKey(e) {
+  if (e.key === "Enter" || e.key === " ") openHoursPicker();
+}
+
+function bindDrumEvents() {
+  const viewport = document.getElementById("hours-drum-viewport");
+  viewport.ontouchstart = e => {
+    drumStartY = e.touches[0].clientY;
+    drumStartOffset = drumOffset;
+    document.getElementById("hours-drum-track").style.transition = "none";
+  };
+  viewport.ontouchmove = e => {
+    e.preventDefault();
+    const dy = e.touches[0].clientY - drumStartY;
+    applyDrum(drumStartOffset + dy, false);
+  };
+  viewport.ontouchend = () => { snapDrum(true); };
+  viewport.onwheel = e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -ITEM_H : ITEM_H;
+    applyDrum(drumOffset + delta, false);
+    snapDrum(true);
+  };
+}
+
+function setHoursPicker(val) {
+  val = parseFloat(val) || 1;
+  pickerValue = val;
+  document.getElementById("f-hours").value = val;
+  document.getElementById("hours-display-val").textContent = val + "h";
+}
+
+// Tap outside commits and closes
+document.addEventListener("click", e => {
+  const overlay = document.getElementById("hours-drum-overlay");
+  if (overlay && overlay.classList.contains("open") && !e.target.closest(".hours-picker-wrap")) {
+    closeHoursPicker();
+  }
+});
+
+// ─── Autocomplete ─────────────────────────────────────────────────────────────
+let acIndex = -1;
+
+function descInput() {
+  const val = document.getElementById("f-desc").value;
+  const list = document.getElementById("autocomplete-list");
+  acIndex = -1;
+  if (!val.trim() || val.includes("\n")) { list.style.display = "none"; return; }
+  const lower = val.toLowerCase();
+  const seen = new Set();
+  const matches = [...entries]
+    .sort((a, b) => b.id.localeCompare(a.id)) // most recent first
+    .filter(e => {
+      const d = e.description.trim();
+      if (!d || !d.toLowerCase().includes(lower) || seen.has(d)) return false;
+      seen.add(d);
+      return true;
+    })
+    .slice(0, 5);
+  if (!matches.length) { list.style.display = "none"; return; }
+  list.innerHTML = matches.map((e, i) =>
+    `<div class="autocomplete-item" data-val="${escHtml(e.description)}" onmousedown="selectAc(event,${i})">${escHtml(e.description)}</div>`
+  ).join("");
+  list.style.display = "block";
+}
+
+function descKeydown(e) {
+  const list = document.getElementById("autocomplete-list");
+  const items = list.querySelectorAll(".autocomplete-item");
+  if (!items.length || list.style.display === "none") return;
+  if (e.key === "ArrowDown") { e.preventDefault(); acIndex = Math.min(acIndex + 1, items.length - 1); highlightAc(items); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); acIndex = Math.max(acIndex - 1, 0); highlightAc(items); }
+  else if (e.key === "Enter" && acIndex >= 0) { e.preventDefault(); applyAc(items[acIndex].dataset.val); }
+  else if (e.key === "Escape") { list.style.display = "none"; acIndex = -1; }
+}
+
+function highlightAc(items) {
+  items.forEach((el, i) => el.classList.toggle("active", i === acIndex));
+}
+
+function selectAc(e, i) {
+  e.preventDefault();
+  const items = document.getElementById("autocomplete-list").querySelectorAll(".autocomplete-item");
+  if (items[i]) applyAc(items[i].dataset.val);
+}
+
+function applyAc(val) {
+  document.getElementById("f-desc").value = val;
+  document.getElementById("autocomplete-list").style.display = "none";
+  acIndex = -1;
+}
+
+// Close autocomplete on outside click
+document.addEventListener("click", e => {
+  if (!e.target.closest(".autocomplete-wrap")) {
+    const list = document.getElementById("autocomplete-list");
+    if (list) list.style.display = "none";
+  }
+});
+
+// ─── Form Cycle Total ─────────────────────────────────────────────────────────
+function updateFormCycleTotal() {
+  const el = document.getElementById("form-cycle-total");
+  if (!el) return;
+  const cycle = getCurrentCycle();
+  const cycleHours = entries.filter(e => e.date >= cycle.from && e.date <= cycle.to)
+    .reduce((s, e) => s + parseFloat(e.hours), 0);
+  const todayStr = dateStr(new Date());
+  const todayHours = entries.filter(e => e.date === todayStr)
+    .reduce((s, e) => s + parseFloat(e.hours), 0);
+  el.innerHTML = todayHours > 0
+    ? `Today: <span>${todayHours}h</span> &nbsp;·&nbsp; Cycle: <span>${cycleHours}h</span>`
+    : `Cycle: <span>${cycleHours}h</span>`;
+}
+
+// ─── CSV Export ───────────────────────────────────────────────────────────────
+function downloadCSV() {
+  if (!entries.length) { showToast("No entries to export"); return; }
+  const headers = ["Date", "Hours", "Project Area", "Description"];
+  const rows = [...entries]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(e => [
+      e.date,
+      e.hours,
+      `"${e.project.replace(/"/g, '""')}"`,
+      `"${e.description.replace(/"/g, '""')}"`
+    ].join(","));
+  const csv = [headers.join(","), ...rows].join("\n");
+  const date = new Date().toISOString().split("T")[0];
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `time-tracker-export-${date}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast("CSV exported");
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function downloadBackup() {
+  if (!entries.length) { showToast("No entries to back up"); return; }
+  const date = new Date().toISOString().split("T")[0];
+  const blob = new Blob([JSON.stringify({ exported: date, entries }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `time-tracker-backup-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast("Backup downloaded");
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+</script>
+</body>
+</html>

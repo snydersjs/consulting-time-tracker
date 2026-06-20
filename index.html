@@ -1144,10 +1144,26 @@ function renderContent() {
     });
 
   } else {
-    // Invoice tab — default to current cycle dates
+    // Invoice tab — default to selected period, fallback to current cycle
     const cycle = getCurrentCycle();
-    if (!invoiceFrom) invoiceFrom = cycle.from;
-    if (!invoiceTo) invoiceTo = cycle.to;
+    if (!invoiceFrom || !invoiceTo) {
+      if (!selectedMonth) {
+        // Current cycle
+        invoiceFrom = cycle.from;
+        invoiceTo = cycle.to;
+      } else if (selectedMonth.startsWith("cycle:")) {
+        // A past billing cycle
+        const [, from, to] = selectedMonth.split(":");
+        invoiceFrom = from;
+        invoiceTo = to;
+      } else {
+        // A calendar month
+        const [y, m] = selectedMonth.split("-");
+        const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+        invoiceFrom = `${y}-${m}-01`;
+        invoiceTo = `${y}-${m}-${String(lastDay).padStart(2,"0")}`;
+      }
+    }
 
     const rangeEntries = entries.filter(e => e.date >= invoiceFrom && e.date <= invoiceTo);
     const rangeLabel = `${formatDate(invoiceFrom)} – ${formatDate(invoiceTo)}`;
@@ -1172,7 +1188,7 @@ function renderContent() {
 }
 
 function switchTab(tab) { activeTab = tab; invoiceFrom = null; invoiceTo = null; renderContent(); }
-function selectMonth(mk) { selectedMonth = mk; invoiceFrom = null; invoiceTo = null; renderContent(); }
+// Note: invoiceFrom/To are reset to null so the invoice tab re-derives from selectedMonth above
 function selectPeriod(val) { selectedMonth = val || null; renderContent(); }
 function updateInvoiceRange() {
   invoiceFrom = document.getElementById("inv-from").value;
